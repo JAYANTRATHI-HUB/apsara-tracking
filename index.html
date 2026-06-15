@@ -126,12 +126,31 @@ document.getElementById("result").innerHTML =
 return;
 }
 
-document.getElementById("result").innerHTML = `
-<b>Tracking ID:</b> ${result.tracking_id}<br><br>
-<b>Courier:</b> ${result.courier_company}<br><br>
-<b>Date:</b> ${result.dispatch_date || "Not Available"}
-`;
+let tracking = result.tracking_id || "";
+let courier = "Delhivery";
 
+if(tracking.startsWith("11")){
+  courier = "Tirupati Courier";
+}
+else if(tracking.toUpperCase().startsWith("SHCP")){
+  courier = "Ekart";
+}
+else if(tracking.toUpperCase().startsWith("C")){
+  courier = "Indian Post";
+}
+
+document.getElementById("result").innerHTML = `
+<div style="background:white;padding:15px;border-radius:12px;">
+<h3 style="margin-top:0;">📦 Tracking Details</h3>
+
+<p><b>Tracking ID:</b><br>${tracking}</p>
+
+<p><b>Courier Company:</b><br>${courier}</p>
+
+<p><b>Dispatch Date:</b><br>${result.dispatch_date || "Not Available"}</p>
+
+</div>
+`;
 }
 
 </script>
