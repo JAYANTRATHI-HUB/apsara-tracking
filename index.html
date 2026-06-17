@@ -70,7 +70,7 @@ button:hover{
 Track your order instantly
 </p>
 
-<input id="search" placeholder="Enter Mobile Number or Name">
+<input id="search" placeholder="Enter Name or Pincode">
 
 <button onclick="searchOrder()">Search</button>
 
@@ -83,9 +83,9 @@ Search your order...
 <script>
 
 const supabaseUrl = "https://jfpvjoflqnrneiqsmcxl.supabase.co";
-const supabaseKey = "sb_publishable_DdL4eMgYt-krkQIWX9F5wg_GDvg2eun";
-
-const supabaseClient = supabase.createClient(
+const supabaseKey = ""sb_publishable_DdL4eMgYt-krkQIWX9F5wg_GDvg2eun";
+const supabaseClient =
+supabase.createClient(
 supabaseUrl,
 supabaseKey
 );
@@ -93,69 +93,128 @@ supabaseKey
 async function searchOrder(){
 
 const value =
-document.getElementById("search").value.trim();
+document.getElementById("search")
+.value
+.trim();
 
 if(!value){
-document.getElementById("result").innerHTML =
-"Please enter name or mobile number";
+
+document.getElementById("result")
+.innerHTML =
+"Please enter Name or Pincode";
+
 return;
 }
 
-let { data, error } = await supabaseClient
+let { data , error } =
+await supabaseClient
 .from("tracking_orders")
 .select("*");
 
 if(error){
-document.getElementById("result").innerHTML =
-"Database error";
+
+document.getElementById("result")
+.innerHTML =
+"Database Error";
+
 return;
 }
 
-const result = data.find(item =>
+const results =
+data.filter(item =>
+
 (item.customer_name || "")
 .toLowerCase()
 .includes(value.toLowerCase())
+
 ||
+
 (item.pincode || "")
+.toString()
 .includes(value)
+
 );
 
-if(!result){
-document.getElementById("result").innerHTML =
+if(results.length === 0){
+
+document.getElementById("result")
+.innerHTML =
 "No tracking found";
+
 return;
 }
 
-let tracking = result.tracking_id || "";
-let courier = "Delhivery";
+let html =
+`<h3>📦 ${results.length} Order(s) Found</h3>`;
+
+results.forEach(result => {
+
+let tracking =
+result.tracking_id || "";
+
+let courier =
+"Delhivery";
 
 if(tracking.startsWith("11")){
-  courier = "Tirupati Courier";
+courier =
+"Tirupati Courier";
 }
-else if(tracking.toUpperCase().startsWith("SHCP")){
-  courier = "Ekart";
+else if(
+tracking.toUpperCase()
+.startsWith("SHCP")
+){
+courier =
+"Ekart";
 }
-else if(tracking.toUpperCase().startsWith("C")){
-  courier = "Indian Post";
+else if(
+tracking.toUpperCase()
+.startsWith("C")
+){
+courier =
+"Indian Post";
 }
 
-document.getElementById("result").innerHTML = `
-<div style="background:white;padding:15px;border-radius:12px;">
-<h3 style="margin-top:0;">📦 Tracking Details</h3>
+html += `
 
-<p><b>Tracking ID:</b><br>${tracking}</p>
+<div style="
+background:white;
+padding:15px;
+margin-top:12px;
+border-radius:12px;
+border-left:5px solid #6c63ff;
+">
 
-<p><b>Courier Company:</b><br>${courier}</p>
+<p>
+<b>Tracking ID:</b><br>
+${tracking}
+</p>
 
-<p><b>Dispatch Date:</b><br>${result.dispatch_date || "Not Available"}</p>
-<p><b>PINCODE:</b><br>${result.pinocde || "Not Available"}</p>
+<p>
+<b>Courier Company:</b><br>
+${courier}
+</p>
 
+<p>
+<b>Dispatch Date:</b><br>
+${result.dispatch_date || "Not Available"}
+</p>
+
+<p>
+<b>Pincode:</b><br>
+${result.pincode || "Not Available"}
+</p>
 
 </div>
+
 `;
+
+});
+
+document.getElementById("result")
+.innerHTML =
+html;
+
 }
 
 </script>
-
-</body>
-</html>
+</body> </html>
