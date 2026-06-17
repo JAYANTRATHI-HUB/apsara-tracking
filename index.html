@@ -147,10 +147,16 @@ let html =
 `<h3>📦 ${results.length} Order(s) Found</h3>
 <p><b>Searched:</b> ${value}</p>`;
 
-  results.sort((a,b) =>
-new Date(b.dispatch_date) - new Date(a.dispatch_date)
-);
+ results.sort((a, b) => {
 
+const da = a.dispatch_date
+? a.dispatch_date.split(".").reverse().join("")
+: "0";
+
+const db = b.dispatch_date
+? b.dispatch_date.split(".").reverse().join("")
+: "0";
+   
 results.forEach(result => {
 
 let tracking =
