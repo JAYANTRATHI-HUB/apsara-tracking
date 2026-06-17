@@ -147,7 +147,7 @@ let html =
 `<h3>📦 ${results.length} Order(s) Found</h3>
 <p><b>Searched:</b> ${value}</p>`;
 
- results.sort((a, b) => {
+results.sort((a, b) => {
 
 const da = a.dispatch_date
 ? a.dispatch_date.split(".").reverse().join("")
@@ -156,9 +156,13 @@ const da = a.dispatch_date
 const db = b.dispatch_date
 ? b.dispatch_date.split(".").reverse().join("")
 : "0";
-   
-results.forEach(result => {
 
+return db.localeCompare(da);
+
+});
+
+results.forEach(result => {
+  
 let tracking =
 result.tracking_id || "";
 
