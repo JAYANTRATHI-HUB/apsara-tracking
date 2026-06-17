@@ -128,10 +128,10 @@ button:disabled{ opacity:.6; cursor:not-allowed; }
 </head>
 <body>
 <div class="container">
-  <h1>📦 Apsara Tracking</h1>
+  <h1>📦 Apsara </h1>
   <p style="text-align:center;color:#666;">Track your order instantly</p>
 
-  <input id="search" placeholder="Enter Name, Pincode or Tracking ID"
+  <input id="search" placeholder="Enter Name, Pincode or  ID"
          onkeydown="if(event.key==='Enter') searchOrder()">
   <button id="searchBtn" onclick="searchOrder()">🔍 Search</button>
 
@@ -145,7 +145,7 @@ const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
 const WHATSAPP_NUMBER = "917221812345"; // 🔧 Replace with your WhatsApp number (with country code, no +)
 
-function (trackingId) {
+function getCourier(trackingId) {   
   const t = trackingId || "";
   if (t.startsWith("11"))                    return "Tirupati Courier";
   if (t.toUpperCase().startsWith("SHCP"))    return "Ekart";
