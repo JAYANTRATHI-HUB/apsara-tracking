@@ -145,10 +145,11 @@ const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
 const WHATSAPP_NUMBER = "917221812345"; // 🔧 Replace with your WhatsApp number (with country code, no +)
 
-function getCourier(trackingId) {
+function (trackingId) {
   const t = trackingId || "";
   if (t.startsWith("11"))                    return "Tirupati Courier";
   if (t.toUpperCase().startsWith("SHCP"))    return "Ekart";
+  if (t.toUpperCase().startsWith("ESAP"))    return "Ekart";
   if (t.toUpperCase().startsWith("C"))       return "Indian Post";
   return "Delhivery";
 }
