@@ -159,6 +159,7 @@ function getTrackingLink(courier, trackingId) {
   if (courier === "Delhivery")       return `https://www.delhivery.com/track/package/${t}`;
   if (courier === "Ekart") return `https://ekartlogistics.com/shipmenttrack/${t}`;
   if (courier === "Indian Post")     return `https://www.indiapost.gov.in/_layouts/15/dop.portal.tracking/trackconsignment.aspx`;
+  if (courier === "Tirupati Courier") return `https://trackcourier.io/track-and-trace/tirupati-courier/${t}`;
   return null; // Tirupati has no standard tracking URL
 }
 
@@ -298,7 +299,7 @@ async function searchOrder() {
           <div style="margin-top:10px;">
             ${trackLink
               ? `<a href="${trackLink}" target="_blank" class="action-btn btn-track">🔍 Track Shipment</a>`
-              : `<span style="font-size:13px;color:#888;">No online tracking for Tirupati Courier</span><br>`
+              : 
             }
             <a href="https://wa.me/${WHATSAPP_NUMBER}?text=${waText}" target="_blank" class="action-btn btn-whatsapp">💬 Share on WhatsApp</a>
           </div>
