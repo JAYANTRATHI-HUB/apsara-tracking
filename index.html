@@ -156,7 +156,7 @@ function getCourier(trackingId) {
 function getTrackingLink(courier, trackingId) {
   const t = encodeURIComponent(trackingId);
   if (courier === "Delhivery")       return `https://www.delhivery.com/track/package/${t}`;
-  if (courier === "Ekart")           return `https://ekartlogistics.com/shipment/track/${t}`;
+  if (courier === "Ekart") return `https://ekartlogistics.com/shipmenttrack/${t}`;
   if (courier === "Indian Post")     return `https://www.indiapost.gov.in/_layouts/15/dop.portal.tracking/trackconsignment.aspx`;
   return null; // Tirupati has no standard tracking URL
 }
