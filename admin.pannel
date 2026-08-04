@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Apsara Admin</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <style>
   :root{
     --violet:#6c63ff;
@@ -208,7 +209,26 @@
         <span id="addMsg"></span>
       </div>
     </div>
-
+<div class="card">
+      <h3>📤 Bulk Upload (CSV)</h3>
+      <p style="font-size:13px;color:#777;margin-top:-8px;">
+        CSV columns needed: <b>name, tracking_id, pincode, dispatch_date</b> (dispatch_date format: DD.MM.YYYY)
+      </p>
+      <input type="file" id="csvFile" accept=".csv" onchange="handleCsvSelect(event)">
+      <div id="csvPreviewWrap" style="display:none;margin-top:16px;">
+        <p style="font-size:13px;color:#555;"><span id="csvCount"></span> rows found. Preview (first 5):</p>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>Name</th><th>Tracking ID</th><th>Pincode</th><th>Dispatch Date</th></tr></thead>
+            <tbody id="csvPreviewBody"></tbody>
+          </table>
+        </div>
+        <div class="row-actions">
+          <button class="btn btn-primary" style="width:auto;margin-top:0;" id="csvUploadBtn" onclick="uploadCsv()">Upload All Rows</button>
+          <span id="csvMsg"></span>
+        </div>
+      </div>
+    </div>
     <div class="card">
       <h3>📋 All Orders</h3>
       <div class="table-toolbar">
@@ -402,6 +422,68 @@ async function addOrder() {
   document.getElementById("f_pincode").value = "";
   document.getElementById("f_weight").value = "";
   document.getElementById("f_dispatch").value = todayDDMMYYYY();
+  loadOrders();
+}
+let csvParsedRows = [];
+
+function handleCsvSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    transformHeader: h => h.trim().toLowerCase(),
+    complete: function(results) {
+      csvParsedRows = results.data.map(row => ({
+        customer_name: (row.name || row.customer_name || "").trim(),
+        tracking_id: (row.tracking_id || row.tracking || "").trim(),
+        pincode: (row.pincode || "").trim(),
+        dispatch_date: (row.dispatch_date || "").trim(),
+        Courier_Company: getCourier(row.tracking_id || row.tracking || "")
+      })).filter(r => r.customer_name && r.tracking_id);
+
+      document.getElementById("csvCount").textContent = csvParsedRows.length;
+      document.getElementById("csvPreviewWrap").style.display = "block";
+
+      const previewBody = document.getElementById("csvPreviewBody");
+      previewBody.innerHTML = csvParsedRows.slice(0, 5).map(r => `
+        <tr>
+          <td>${sanitize(r.customer_name)}</td>
+          <td>${sanitize(r.tracking_id)}</td>
+          <td>${sanitize(r.pincode)}</td>
+          <td>${sanitize(r.dispatch_date)}</td>
+        </tr>`).join("");
+
+      document.getElementById("csvMsg").textContent = "";
+      document.getElementById("csvMsg").className = "";
+    }
+  });
+}
+
+async function uploadCsv() {
+  if (csvParsedRows.length === 0) return;
+  const btn = document.getElementById("csvUploadBtn");
+  const msgEl = document.getElementById("csvMsg");
+  btn.disabled = true;
+  btn.textContent = "Uploading...";
+
+  const { error } = await supabaseClient.from("tracking_orders").insert(csvParsedRows);
+
+  btn.disabled = false;
+  btn.textContent = "Upload All Rows";
+
+  if (error) {
+    msgEl.textContent = "Error: " + error.message;
+    msgEl.className = "err";
+    return;
+  }
+
+  msgEl.textContent = csvParsedRows.length + " orders uploaded ✓";
+  msgEl.className = "ok";
+  csvParsedRows = [];
+  document.getElementById("csvFile").value = "";
+  document.getElementById("csvPreviewWrap").style.display = "none";
   loadOrders();
 }
 
