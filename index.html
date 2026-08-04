@@ -190,10 +190,11 @@ async function searchOrder() {
   btn.disabled = true;
 
   try {
-    let { data, error } = await supabaseClient
-      .from("tracking_orders")
-      .select("*");
-
+   let { data, error } = await supabaseClient
+  .from("tracking_orders")
+  .select("*")
+  .range(0, 19999);
+    
     if (error) {
       resultDiv.innerHTML = "Database error. Please try again.";
       return;
