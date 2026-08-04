@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apsara Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<style>
+  :root{
+    --violet:#6c63ff;
+    --violet-dark:#4b43d6;
+    --ink:#2a2a35;
+    --paper:#f7f6fb;
+    --line:#e3e1ef;
+    --green:#1a7a3c;
+    --green-bg:#e0f7e9;
+    --red:#c0392b;
+    --red-bg:#fdecea;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,Segoe UI,Arial,sans-serif;
+    background:linear-gradient(135deg,#667eea,#764ba2);
+    min-height:100vh;
+    color:var(--ink);
+  }
+  header{
+    padding:22px 24px 18px;
+    color:white;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    max-width:1100px;
+    margin:0 auto;
+  }
+  header h1{ margin:0; font-size:20px; font-weight:700; }
+  header .sub{ font-size:13px; opacity:.85; margin-top:2px; }
+  #signOutBtn{
+    background:rgba(255,255,255,.15);
+    color:white;
+    border:1px solid rgba(255,255,255,.4);
+    padding:8px 14px;
+    border-radius:10px;
+    cursor:pointer;
+    font-size:13px;
+  }
+  #signOutBtn:hover{ background:rgba(255,255,255,.28); }
+
+  .wrap{ max-width:1100px; margin:0 auto; padding:0 24px 60px; }
+
+  /* Login card */
+  #loginScreen{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .login-card{
+    background:var(--paper);
+    padding:36px 32px;
+    border-radius:18px;
+    box-shadow:0 20px 50px rgba(0,0,0,.25);
+    width:100%;
+    max-width:360px;
+  }
+  .login-card h2{ margin:0 0 4px; font-size:22px; }
+  .login-card p{ margin:0 0 20px; color:#777; font-size:14px; }
+  label{ font-size:12px; font-weight:600; color:#555; display:block; margin:14px 0 6px; }
+  input, select{
+    width:100%;
+    padding:11px 12px;
+    border:1.5px solid var(--line);
+    border-radius:10px;
+    font-size:14px;
+    background:white;
+  }
+  input:focus, select:focus{ outline:none; border-color:var(--violet); }
+  .btn{
+    display:inline-block;
+    border:none;
+    border-radius:10px;
+    padding:11px 18px;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .btn-primary{ background:var(--violet); color:white; width:100%; margin-top:18px; }
+  .btn-primary:hover{ background:var(--violet-dark); }
+  .btn-primary:disabled{ opacity:.6; cursor:not-allowed; }
+  #loginError{ color:var(--red); font-size:13px; margin-top:10px; min-height:16px; }
+
+  /* Cards */
+  .card{
+    background:var(--paper);
+    border-radius:16px;
+    padding:22px;
+    margin-top:20px;
+    box-shadow:0 10px 30px rgba(0,0,0,.12);
+  }
+  .card h3{ margin:0 0 14px; font-size:16px; }
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:12px;
+  }
+  .row-actions{ margin-top:16px; display:flex; gap:10px; align-items:center; }
+  #addMsg{ font-size:13px; margin-left:4px; }
+  #addMsg.ok{ color:var(--green); }
+  #addMsg.err{ color:var(--red); }
+
+  /* Table */
+  .table-toolbar{
+    display:flex; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap;
+  }
+  .table-toolbar input{ flex:1; min-width:200px; }
+  .count-pill{
+    background:white; border:1px solid var(--line); border-radius:20px;
+    padding:6px 14px; font-size:12px; color:#666; white-space:nowrap;
+  }
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  th{
+    text-align:left; padding:10px 8px; color:#777; font-weight:600;
+    border-bottom:2px solid var(--line); white-space:nowrap;
+  }
+  td{ padding:10px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  tr:hover td{ background:#fbfaff; }
+  .courier-tag{
+    display:inline-block; background:#eef0ff; color:var(--violet-dark);
+    padding:2px 8px; border-radius:20px; font-size:11px; font-weight:600;
+  }
+  .icon-btn{
+    border:none; background:none; cursor:pointer; font-size:15px;
+    padding:4px 7px; border-radius:6px;
+  }
+  .icon-btn:hover{ background:var(--line); }
+  .icon-btn.danger:hover{ background:var(--red-bg); }
+  .edit-input{ padding:6px 8px; font-size:13px; border-radius:6px; }
+  .empty-state{ text-align:center; padding:40px 10px; color:#888; font-size:14px; }
+  .pager{ display:flex; justify-content:center; gap:10px; margin-top:16px; align-items:center; font-size:13px; color:#666; }
+  .pager button{
+    border:1px solid var(--line); background:white; border-radius:8px;
+    padding:6px 12px; cursor:pointer; font-size:13px;
+  }
+  .pager button:disabled{ opacity:.4; cursor:not-allowed; }
+  #globalStatus{
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    background:var(--ink); color:white; padding:10px 18px; border-radius:10px;
+    font-size:13px; opacity:0; transition:opacity .25s; pointer-events:none;
+    box-shadow:0 8px 24px rgba(0,0,0,.3);
+  }
+  #globalStatus.show{ opacity:1; }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-card">
+    <h2>📦 Apsara Admin</h2>
+    <p>Sign in to manage tracking orders</p>
+    <label>Email</label>
+    <input id="loginEmail" type="email" placeholder="you@example.com" autocomplete="username">
+    <label>Password</label>
+    <input id="loginPassword" type="password" placeholder="••••••••" autocomplete="current-password"
+           onkeydown="if(event.key==='Enter') doLogin()">
+    <button class="btn btn-primary" id="loginBtn" onclick="doLogin()">Sign In</button>
+    <div id="loginError"></div>
+  </div>
+</div>
+
+<div id="adminScreen" style="display:none;">
+  <header>
+    <div>
+      <h1>📦 Apsara Admin</h1>
+      <div class="sub" id="whoami"></div>
+    </div>
+    <button id="signOutBtn" onclick="doLogout()">Sign Out</button>
+  </header>
+
+  <div class="wrap">
+
+    <div class="card">
+      <h3>➕ Add New Order</h3>
+      <div class="grid">
+        <div>
+          <label>Customer Name</label>
+          <input id="f_name" placeholder="e.g. Mahesh Sharma">
+        </div>
+        <div>
+          <label>Tracking ID</label>
+          <input id="f_tracking" placeholder="e.g. ESAP0000201493">
+        </div>
+        <div>
+          <label>Pincode</label>
+          <input id="f_pincode" placeholder="e.g. 302001" maxlength="6">
+        </div>
+        <div>
+          <label>Dispatch Date</label>
+          <input id="f_dispatch" placeholder="DD.MM.YYYY">
+        </div>
+        <div>
+          <label>Weight (kg) — optional</label>
+          <input id="f_weight" type="number" step="0.01" placeholder="e.g. 1.2">
+        </div>
+      </div>
+      <div class="row-actions">
+        <button class="btn btn-primary" style="width:auto;margin-top:0;" id="addBtn" onclick="addOrder()">Add Order</button>
+        <span id="addMsg"></span>
+      </div>
+    </div>
+<div class="card">
+      <h3>📤 Bulk Upload (CSV)</h3>
+      <p style="font-size:13px;color:#777;margin-top:-8px;">
+        CSV columns needed: <b>name, tracking_id, pincode, dispatch_date</b> (dispatch_date format: DD.MM.YYYY)
+      </p>
+      <input type="file" id="csvFile" accept=".csv" onchange="handleCsvSelect(event)">
+      <div id="csvPreviewWrap" style="display:none;margin-top:16px;">
+        <p style="font-size:13px;color:#555;"><span id="csvCount"></span> rows found. Preview (first 5):</p>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>Name</th><th>Tracking ID</th><th>Pincode</th><th>Dispatch Date</th></tr></thead>
+            <tbody id="csvPreviewBody"></tbody>
+          </table>
+        </div>
+        <div class="row-actions">
+          <button class="btn btn-primary" style="width:auto;margin-top:0;" id="csvUploadBtn" onclick="uploadCsv()">Upload All Rows</button>
+          <span id="csvMsg"></span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>📋 All Orders</h3>
+      <div class="table-toolbar">
+        <input id="searchBox" placeholder="Search by name, tracking ID or pincode..." oninput="renderTable()">
+        <span class="count-pill" id="countPill">0 orders</span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Tracking ID</th>
+              <th>Courier</th>
+              <th>Pincode</th>
+              <th>Dispatch Date</th>
+              <th>Weight</th>
+              <th>Uploaded</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+        <div id="emptyState" class="empty-state" style="display:none;">No orders match your search.</div>
+      </div>
+      <div class="pager">
+        <button id="prevPageBtn" onclick="changePage(-1)">&larr; Prev</button>
+        <span id="pageInfo">Page 1</span>
+        <button id="nextPageBtn" onclick="changePage(1)">Next &rarr;</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="globalStatus"></div>
+
+<script>
+const supabaseUrl = "https://jfpvjoflqnrneiqsmcxl.supabase.co";
+const supabaseKey = "sb_publishable_DdL4eMgYt-krkQIWX9F5wg_GDvg2eun";
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+const PAGE_SIZE = 25;
+let allOrders = [];
+let currentPage = 1;
+
+function getCourier(trackingId) {
+  const t = trackingId || "";
+  if (t.startsWith("11"))                  return "Tirupati Courier";
+  if (t.toUpperCase().startsWith("SHCP"))  return "Ekart";
+  if (t.toUpperCase().startsWith("ESAP"))  return "Ekart";
+  if (t.toUpperCase().startsWith("C"))     return "Indian Post";
+  return "Delhivery";
+}
+
+function todayDDMMYYYY() {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, "0");
+  return `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`;
+}
+
+function showStatus(msg, isErr) {
+  const el = document.getElementById("globalStatus");
+  el.textContent = msg;
+  el.style.background = isErr ? "#c0392b" : "#2a2a35";
+  el.classList.add("show");
+  setTimeout(() => el.classList.remove("show"), 2600);
+}
+
+function sanitize(str) {
+  return String(str || "").replace(/[<>&"]/g, c =>
+    ({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c])
+  );
+}
+
+/* ---------- AUTH ---------- */
+
+async function doLogin() {
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value;
+  const btn = document.getElementById("loginBtn");
+  const errEl = document.getElementById("loginError");
+  errEl.textContent = "";
+
+  if (!email || !password) {
+    errEl.textContent = "Please enter both email and password.";
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Signing in...";
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+  btn.disabled = false;
+  btn.textContent = "Sign In";
+
+  if (error) {
+    errEl.textContent = "Incorrect email or password.";
+    return;
+  }
+  showAdminScreen(data.user);
+}
+
+async function doLogout() {
+  await supabaseClient.auth.signOut();
+  document.getElementById("adminScreen").style.display = "none";
+  document.getElementById("loginScreen").style.display = "flex";
+  document.getElementById("loginEmail").value = "";
+  document.getElementById("loginPassword").value = "";
+}
+
+function showAdminScreen(user) {
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("adminScreen").style.display = "block";
+  document.getElementById("whoami").textContent = "Signed in as " + user.email;
+  document.getElementById("f_dispatch").value = todayDDMMYYYY();
+  loadOrders();
+}
+
+async function checkExistingSession() {
+  const { data } = await supabaseClient.auth.getSession();
+  if (data.session && data.session.user) {
+    showAdminScreen(data.session.user);
+  }
+}
+checkExistingSession();
+
+/* ---------- DATA ---------- */
+
+async function loadOrders() {
+  let { data, error } = await supabaseClient
+    .from("tracking_orders")
+    .select("*")
+    .range(0, 19999)
+    .order("id", { ascending: false });
+
+  if (error) {
+    showStatus("Failed to load orders: " + error.message, true);
+    return;
+  }
+  allOrders = data || [];
+  currentPage = 1;
+  renderTable();
+}
+
+async function addOrder() {
+  const name = document.getElementById("f_name").value.trim();
+  const tracking = document.getElementById("f_tracking").value.trim();
+  const pincode = document.getElementById("f_pincode").value.trim();
+  const dispatch = document.getElementById("f_dispatch").value.trim();
+  const weightRaw = document.getElementById("f_weight").value.trim();
+  const msgEl = document.getElementById("addMsg");
+  const btn = document.getElementById("addBtn");
+
+  msgEl.textContent = "";
+  msgEl.className = "";
+
+  if (!name || !tracking || !pincode) {
+    msgEl.textContent = "Name, Tracking ID and Pincode are required.";
+    msgEl.className = "err";
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Adding...";
+
+  const payload = {
+    customer_name: name,
+    tracking_id: tracking,
+    pincode: pincode,
+    dispatch_date: dispatch || null,
+    Courier_Company: getCourier(tracking),
+    weight: weightRaw ? parseFloat(weightRaw) : null
+  };
+
+  const { error } = await supabaseClient.from("tracking_orders").insert([payload]);
+
+  btn.disabled = false;
+  btn.textContent = "Add Order";
+
+  if (error) {
+    msgEl.textContent = "Error: " + error.message;
+    msgEl.className = "err";
+    return;
+  }
+
+  msgEl.textContent = "Order added ✓";
+  msgEl.className = "ok";
+  document.getElementById("f_name").value = "";
+  document.getElementById("f_tracking").value = "";
+  document.getElementById("f_pincode").value = "";
+  document.getElementById("f_weight").value = "";
+  document.getElementById("f_dispatch").value = todayDDMMYYYY();
+  loadOrders();
+}
+let csvParsedRows = [];
+
+function handleCsvSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    transformHeader: h => h.trim().toLowerCase(),
+    complete: function(results) {
+      csvParsedRows = results.data.map(row => ({
+        customer_name: (row.name || row.customer_name || "").trim(),
+        tracking_id: (row.tracking_id || row.tracking || "").trim(),
+        pincode: (row.pincode || "").trim(),
+        dispatch_date: (row.dispatch_date || "").trim(),
+        Courier_Company: getCourier(row.tracking_id || row.tracking || "")
+      })).filter(r => r.customer_name && r.tracking_id);
+
+      document.getElementById("csvCount").textContent = csvParsedRows.length;
+      document.getElementById("csvPreviewWrap").style.display = "block";
+
+      const previewBody = document.getElementById("csvPreviewBody");
+      previewBody.innerHTML = csvParsedRows.slice(0, 5).map(r => `
+        <tr>
+          <td>${sanitize(r.customer_name)}</td>
+          <td>${sanitize(r.tracking_id)}</td>
+          <td>${sanitize(r.pincode)}</td>
+          <td>${sanitize(r.dispatch_date)}</td>
+        </tr>`).join("");
+
+      document.getElementById("csvMsg").textContent = "";
+      document.getElementById("csvMsg").className = "";
+    }
+  });
+}
+
+async function uploadCsv() {
+  if (csvParsedRows.length === 0) return;
+  const btn = document.getElementById("csvUploadBtn");
+  const msgEl = document.getElementById("csvMsg");
+  btn.disabled = true;
+  btn.textContent = "Uploading...";
+
+  const { error } = await supabaseClient.from("tracking_orders").insert(csvParsedRows);
+
+  btn.disabled = false;
+  btn.textContent = "Upload All Rows";
+
+  if (error) {
+    msgEl.textContent = "Error: " + error.message;
+    msgEl.className = "err";
+    return;
+  }
+
+  msgEl.textContent = csvParsedRows.length + " orders uploaded ✓";
+  msgEl.className = "ok";
+  csvParsedRows = [];
+  document.getElementById("csvFile").value = "";
+  document.getElementById("csvPreviewWrap").style.display = "none";
+  loadOrders();
+}
+
+async function deleteOrder(id) {
+  if (!confirm("Delete this order permanently? This cannot be undone.")) return;
+  const { error } = await supabaseClient.from("tracking_orders").delete().eq("id", id);
+  if (error) {
+    showStatus("Delete failed: " + error.message, true);
+    return;
+  }
+  showStatus("Order deleted");
+  loadOrders();
+}
+
+async function saveEdit(id, field, value) {
+  const payload = {};
+  payload[field] = value;
+  const { error } = await supabaseClient.from("tracking_orders").update(payload).eq("id", id);
+  if (error) {
+    showStatus("Update failed: " + error.message, true);
+    return;
+  }
+  showStatus("Saved ✓");
+  const item = allOrders.find(o => o.id === id);
+  if (item) item[field] = value;
+}
+
+/* ---------- TABLE RENDER ---------- */
+
+function getFiltered() {
+  const q = document.getElementById("searchBox").value.trim().toLowerCase();
+  if (!q) return allOrders;
+  return allOrders.filter(o =>
+    (o.customer_name || "").toLowerCase().includes(q) ||
+    (o.tracking_id || "").toLowerCase().includes(q) ||
+    String(o.pincode || "").includes(q)
+  );
+}
+
+function changePage(delta) {
+  currentPage += delta;
+  renderTable();
+}
+
+function renderTable() {
+  const filtered = getFiltered();
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const pageItems = filtered.slice(start, start + PAGE_SIZE);
+
+  document.getElementById("countPill").textContent = filtered.length + " order" + (filtered.length === 1 ? "" : "s");
+  document.getElementById("pageInfo").textContent = `Page ${currentPage} of ${totalPages}`;
+  document.getElementById("prevPageBtn").disabled = currentPage <= 1;
+  document.getElementById("nextPageBtn").disabled = currentPage >= totalPages;
+
+  const tbody = document.getElementById("tableBody");
+  const emptyState = document.getElementById("emptyState");
+
+  if (pageItems.length === 0) {
+    tbody.innerHTML = "";
+    emptyState.style.display = "block";
+    return;
+  }
+  emptyState.style.display = "none";
+
+  tbody.innerHTML = pageItems.map(o => {
+    const uploaded = o.upload_date ? new Date(o.upload_date).toLocaleDateString() : "—";
+    return `
+      <tr>
+        <td><input class="edit-input" value="${sanitize(o.customer_name)}"
+             onchange="saveEdit(${o.id}, 'customer_name', this.value)" style="width:130px;"></td>
+        <td><input class="edit-input" value="${sanitize(o.tracking_id)}"
+             onchange="saveEdit(${o.id}, 'tracking_id', this.value)" style="width:140px;"></td>
+        <td><span class="courier-tag">${getCourier(o.tracking_id)}</span></td>
+        <td><input class="edit-input" value="${sanitize(o.pincode)}"
+             onchange="saveEdit(${o.id}, 'pincode', this.value)" style="width:70px;"></td>
+        <td><input class="edit-input" value="${sanitize(o.dispatch_date)}"
+             onchange="saveEdit(${o.id}, 'dispatch_date', this.value)" style="width:95px;" placeholder="DD.MM.YYYY"></td>
+        <td><input class="edit-input" type="number" step="0.01" value="${o.weight ?? ''}"
+             onchange="saveEdit(${o.id}, 'weight', this.value ? parseFloat(this.value) : null)" style="width:60px;"></td>
+        <td style="white-space:nowrap;color:#888;font-size:12px;">${uploaded}</td>
+        <td><button class="icon-btn danger" title="Delete" onclick="deleteOrder(${o.id})">🗑️</button></td>
+      </tr>`;
+  }).join("");
+}
+</script>
+</body>
+</html>
