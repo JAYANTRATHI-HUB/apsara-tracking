@@ -127,7 +127,7 @@ const WHATSAPP_NUMBER = "917221812345";
 
 function getCourier(trackingId) {
   const t = trackingId || "";
-  if (t.startsWith("11"))                      return "Tirupati Courier";
+  if (t.startsWith("11") || t.startsWith("1229")) return "Tirupati Courier";
   if (t.toUpperCase().startsWith("SHCP"))      return "Ekart";
   if (t.toUpperCase().startsWith("ESAP"))      return "Ekart";
   if (t.toUpperCase().startsWith("C"))         return "Indian Post";
